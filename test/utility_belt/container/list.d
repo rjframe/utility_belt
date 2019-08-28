@@ -3,24 +3,6 @@ module test.utility_belt.container.list;
 import std.conv : text;
 import utility_belt.container.list;
 
-@("Create SList with one element")
-unittest {
-    auto l = List!int(5);
-    assert(l.front() == 5, l.front().text);
-    assert(l.length() == 1);
-}
-
-@("Create SList with multiple elements")
-unittest {
-    auto l = List!int(5, 6, 7);
-    assert(l.length() == 3, l.length().text);
-    assert(l.back() == 7, l.back().text);
-    assert(l.moveFront() == 5, l.front().text);
-    assert(l.moveFront() == 6, l.front().text);
-    assert(l.front() == 7, l.front().text);
-    assert(l.length() == 1, l.length().text);
-}
-
 @("Duplicate a list")
 unittest {
     auto l1 = List!int(1, 2, 3);
@@ -70,7 +52,7 @@ unittest {
     assert(l.length() == 2, l.length().text);
 }
 
-@("Concatenate an element")
+@("Concatenate an element in an SList")
 unittest {
     auto l = List!int(3);
     l ~= 5;
@@ -83,7 +65,7 @@ unittest {
     assert(l.front() == 4);
 }
 
-@("Concatenate a range of elements")
+@("Concatenate a range of elements of an SList")
 unittest {
     auto l = List!int(3);
     l ~= [5, 6, 7];
@@ -96,7 +78,7 @@ unittest {
     assert(l.front() == 4, l.front().text);
 }
 
-@("Concatenate another list")
+@("Concatenate another single-linked list")
 unittest {
     auto l = List!int(2, 3);
     auto l2 = List!int(4, 5);
@@ -112,7 +94,20 @@ unittest {
     assert(l.front() == 9);
 }
 
-@("Remove the first occurence of an element")
+@("Concatenate another double-linked list")
+unittest {
+    auto l = DList!int(1, 2);
+    auto l2 = DList!int(3, 4);
+    l ~= l2;
+
+    assert(l.length() == 4, l.length().text);
+    assert(l.moveBack() == 4);
+    assert(l.moveBack() == 3);
+    assert(l.moveBack() == 2);
+    assert(l.back() == 1);
+}
+
+@("Remove the first occurence of an element of an SList")
 unittest {
     auto l = List!int(1, 2, 3, 2, 3, 2);
     l.remove(2);
@@ -124,7 +119,7 @@ unittest {
     assert(l.front() == 2);
 }
 
-@("Remove all occurrences of an element")
+@("Remove all occurrences of an element of an SList")
 unittest {
     auto l = List!int(2, 1, 2, 3, 2, 3, 2);
     l.remove(2, true);
@@ -132,4 +127,79 @@ unittest {
     assert(l.moveFront() == 1);
     assert(l.moveFront() == 3);
     assert(l.front() == 3);
+}
+
+@("DList moveFront")
+unittest {
+    auto l = DList!int(1, 2);
+    assert(l.moveFront() == 1);
+    assert(l.front() == 2);
+}
+
+@("DList moveBack")
+unittest {
+    auto l = DList!int(1, 2);
+    assert(l.moveBack() == 2);
+    assert(l.back() == 1);
+}
+
+@("DList insertFront")
+unittest {
+    auto l = DList!int(1);
+    l.insertFront(2);
+    assert(l.front() == 2);
+}
+
+@("DList insertBack")
+unittest {
+    auto l = DList!int(1);
+    l.insertBack(2);
+    assert(l.back() == 2);
+}
+
+@("DList removeFront")
+unittest {
+    auto l = DList!int(1, 2);
+    l.removeFront();
+    assert(l.front() == 2);
+}
+
+@("DList removeBack")
+unittest {
+    auto l = DList!int(1, 2);
+    l.removeBack();
+    assert(l.front() == 1);
+}
+
+@("Remove the first occurence of an element of a DList")
+unittest {
+    auto l = DList!int(1, 2, 3, 2, 3, 2);
+    l.remove(2);
+    assert(l.length() == 5, l.length().text);
+    assert(l.moveFront() == 1);
+    assert(l.moveFront() == 3);
+    assert(l.moveFront() == 2);
+    assert(l.moveFront() == 3);
+    assert(l.front() == 2);
+}
+
+@("Remove all occurrences of an element of a DList")
+unittest {
+    auto l = DList!int(2, 1, 2, 3, 2, 3, 2);
+    l.remove(2, true);
+    assert(l.length() == 3);
+    assert(l.moveFront() == 1);
+    assert(l.moveFront() == 3);
+    assert(l.front() == 3);
+}
+
+@("Iterate over elements via a reverse range")
+unittest {
+    auto l = DList!int(1, 2, 3);
+    auto r = l.reverseRange;
+    assert(r.moveFront() == 3);
+    assert(r.moveFront() == 2);
+    assert(r.moveFront() == 1);
+    assert(r.empty());
+    assert(l.length == 3);
 }

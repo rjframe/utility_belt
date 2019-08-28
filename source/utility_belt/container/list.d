@@ -10,8 +10,8 @@ module utility_belt.container.list;
 // TODO: Allow opt-in to indexing (keep track of nodes via rbtree or something).
 
 // Convenience aliases:
-alias SList(T) = List(T, Link.Single);
-alias DList(T) = List(T, Link.Double);
+alias SList(T) = List!(T, Link.Single);
+alias DList(T) = List!(T, Link.Double);
 
 enum Link {
     Single,
@@ -21,6 +21,8 @@ enum Link {
 struct List(T, Link link = Link.Single) {
     alias Node = ListNode!(T, link);
 
+    @disable this();
+
     // Θ(1)
     this(T t) {
         root = new Node(t);
@@ -29,18 +31,26 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(n)
-    this(T...)(T ts) {
-        foreach (node; ts) {
-            insertBack(node);
+    this(T...)(T ts)
+        in(ts.length > 0)
+    {
+        if (root is null) {
+            root = new Node(ts[0]);
+            last = root;
+            len = 1;
+        }
+
+        foreach (t; ts[1..$]) {
+            insertBack(t);
         }
     }
 
     // Θ(n)
     auto dup() {
-        auto newList = typeof(this)();
-        foreach (elem; this[]) {
-            newList.insertBack(elem);
-        }
+        import std.algorithm.iteration : each;
+        auto elems = this[];
+        auto newList = typeof(this)(elems.moveFront());
+        elems.each!((elem) { newList.insertBack(elem); });
         return newList;
     }
 
@@ -65,6 +75,9 @@ struct List(T, Link link = Link.Single) {
         in(len + other.len > len)
     {
         last.next = other.root;
+        static if (link == Link.Double) {
+            other.root.prev = last;
+        }
         last = other.last;
         len += other.len;
         return this;
@@ -75,6 +88,9 @@ struct List(T, Link link = Link.Single) {
         in(len + other.len > len)
     {
         last.next = other.root;
+        static if (link == Link.Double) {
+            other.prev = last;
+        }
         last = other.last;
         len += other.len;
         return this;
@@ -101,6 +117,11 @@ struct List(T, Link link = Link.Single) {
     }
 
     auto opSlice() { return Range(root); }
+    auto range() { return Range(root); }
+
+    static if (link == Link.Double) {
+        auto reverseRange() { return ReverseRange(last); }
+    }
 
     // Θ(1)
     @property bool empty() { return len == 0; }
@@ -115,9 +136,13 @@ struct List(T, Link link = Link.Single) {
     @property void front(scope ref T t) { root.data = t; }
 
     // Θ(1)
-    ref T moveFront() {
+    ref T moveFront()
+    {
         auto tmp = root;
         root = root.next;
+        static if (link == Link.Double) {
+            root.prev = null;
+        }
         --len;
         return tmp.data;
     }
@@ -135,11 +160,15 @@ struct List(T, Link link = Link.Single) {
     }
 
     static if (link == Link.Double) {
-        // SList: Θ(n-1) , DList: Θ(1)
-        // SList could be Θ(1) if repl w/ empty node so prev doesn't need to be
-        // touched; may not be worth the extra bookkeeping.
-        ref T moveBack() {
-            assert(0, "implement");
+        // Θ(1)
+        ref T moveBack()
+            in(last.prev !is null)
+        {
+            auto n = last;
+            last = last.prev;
+            last.next = null;
+            --len;
+            return n.data;
         }
     }
 
@@ -162,8 +191,12 @@ struct List(T, Link link = Link.Single) {
 
     // Θ(1)
     void insertFront(T t) {
-        auto newRoot = new Node(t, root);
-        root = newRoot;
+        static if (link == Link.Single) {
+            root = new Node(t, root);
+        } else {
+            root = new Node(t, null, root);
+            root.next.prev = root;
+        }
         ++len;
     }
 
@@ -175,7 +208,11 @@ struct List(T, Link link = Link.Single) {
             len = 1;
         } else {
             assert(last.next is null);
-            last.next = new Node(t);
+            static if (link == Link.Single) {
+                last.next = new Node(t);
+            } else {
+                last.next = new Node(t, last, null);
+            }
             last = last.next;
             ++len;
         }
@@ -184,13 +221,17 @@ struct List(T, Link link = Link.Single) {
     // Θ(1)
     void removeFront() {
         root = root.next;
+        static if (link == Link.Double) {
+            root.prev = null;
+        }
         --len;
     }
 
     static if (link == Link.Double) {
         // Θ(1)
         void removeBack() {
-            assert(0, "implement");
+            last.prev.next = null;
+            --len;
         }
     }
 
@@ -206,6 +247,10 @@ struct List(T, Link link = Link.Single) {
         while (previous.next !is null) {
             if (previous.next.data == t) {
                 previous.next = previous.next.next;
+                static if (link == Link.Double) {
+                    if (previous.next !is null)
+                        previous.next.prev = previous;
+                }
                 --len;
                 if (! removeAll) return;
             } else previous = previous.next;
@@ -215,12 +260,11 @@ struct List(T, Link link = Link.Single) {
     private:
 
     size_t len = 0;
-    Node root;
-    Node last;
+    Node root; invariant(root !is null);
+    Node last; invariant(last !is null);
 
-    // TODO: DList ReverseRange
     struct Range {
-        this(ref Node root) { this.root = root; }
+        this(scope ref Node root) { this.root = root; }
 
         @property T front() { return root.data; }
         @property bool empty() { return root is null; }
@@ -235,6 +279,23 @@ struct List(T, Link link = Link.Single) {
         private:
         Node root;
     }
+
+    struct ReverseRange {
+        this(scope ref Node last) { this.last = last; }
+
+        @property T front() { return last.data; }
+        @property bool empty() { return last is null; }
+        void popFront() { last = last.prev; }
+
+        T moveFront() {
+            auto t = front();
+            popFront();
+            return t;
+        }
+
+        private:
+        Node last;
+    }
 }
 
 private:
@@ -246,21 +307,15 @@ final class ListNode(T, Link link = Link.Single) {
     typeof(this) next = null;
     T data;
 
-    static if (link == Link.Single) {
-        this(ref T t) { data = t; }
+    this(scope ref T t) { data = t; }
 
-        this(ref T t, ref typeof(this) next) {
+    static if (link == Link.Single) {
+        this(scope ref T t, typeof(this) next) {
             data = t;
             this.next = next;
         }
     } else {
-        this(ref T t, ref typeof(this) prev) {
-            data = t;
-            this.prev = prev;
-            this.next = next;
-        }
-
-        this(ref T t, ref typeof(this) prev, ref typeof(this) next) {
+        this(scope ref T t, typeof(this) prev, typeof(this) next) {
             data = t;
             this.prev = prev;
             this.next = next;
