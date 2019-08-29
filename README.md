@@ -8,20 +8,20 @@ any of the others at any given time.
 
 Very short code examples are below; the tests show a more complete picture.
 
-* [container/list.d](#list.d): Single/Double-linked list
-    * Θ(1) .length() and last-node removal.
+* [container/list.d](#listd): Single/Double-linked list
+    * Θ(1) length() property and last-node removal.
     * The List maintains control of the nodes; it's fine for stacks and queues
       but if you need access to the nodes, not just the data, you don't want
       this.
-* [ini.d](#ini.d): Compile-time/runtime INI parser.
+* [ini.d](#inid): Compile-time/runtime INI parser.
     * Easy merging of compile-time and runtime settings.
-* [trace.d](#trace.d): simple debug-only trace function.
+* [trace.d](#traced): simple debug-only trace function.
 
 ## list.d
 
 ```d
 auto single = SList!int(1, 2, 3);
-auto double = DList!int(2, 3, 4);
+auto double_ = DList!int(2, 3, 4);
 
 single ~= [4, 5, 6];
 assert(single.back() == 6);
