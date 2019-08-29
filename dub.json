@@ -1,0 +1,30 @@
+{
+	"name": "utility_belt",
+	"authors": [
+		"Ryan Frame"
+	],
+	"description": "Commonly needed code too small to justify its own project.",
+	"copyright": "Copyright 2018-2019 Ryan Frame",
+	"license": "MIT",
+    "dflags-dmd": [ "-preview=dip1000" ],
+    "configurations": [
+        {
+            "name": "library",
+            "targetType": "library"
+        },
+        {
+            "name": "unittest",
+            "targetType": "executable",
+            "preBuildCommands": [
+                "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
+            ],
+            "mainSourceFile": "bin/ut.d",
+            "sourcePaths": [ "source", "test" ],
+            "importPaths": [ "source"],
+            "stringImportPaths": [ "test" ],
+            "dependencies": {
+                "unit-threaded": "~>0.10.3"
+            }
+        }
+    ]
+}
