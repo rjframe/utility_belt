@@ -24,14 +24,14 @@ struct List(T, Link link = Link.Single) {
     @disable this();
 
     // Θ(1)
-    this(T t) {
+    @safe this(T t) {
         root = new Node(t);
         last = root;
         len = 1;
     }
 
     // Θ(n)
-    this(T...)(T ts)
+    @safe this(T...)(T ts)
         in(ts.length > 0)
     {
         if (root is null) {
@@ -46,7 +46,7 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(n)
-    auto dup() {
+    @safe auto dup() {
         import std.algorithm.iteration : each;
         auto elems = this[];
         auto newList = typeof(this)(elems.moveFront());
@@ -55,21 +55,21 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(1)
-    auto opOpAssign(string op)(T t) if (op == "~") {
+    @safe auto opOpAssign(string op)(T t) if (op == "~") {
         insertBack(t);
         return this;
     }
-    auto opBinary(string op)(T t) if (op == "~") {
+    @safe auto opBinary(string op)(T t) if (op == "~") {
         insertBack(t);
         return this;
     }
-    auto opBinaryRight(string op)(T t) if (op == "~") {
+    @safe auto opBinaryRight(string op)(T t) if (op == "~") {
         insertFront(t);
         return this;
     }
 
     // Θ(1)
-    auto opOpAssign(string op)(typeof(this) other) if (op == "~")
+    @safe auto opOpAssign(string op)(typeof(this) other) if (op == "~")
         in(other.last.next is null)
         in(last.next is null)
         in(len + other.len > len)
@@ -82,7 +82,7 @@ struct List(T, Link link = Link.Single) {
         len += other.len;
         return this;
     }
-    auto opBinary(string op)(typeof(this) other) if (op == "~")
+    @safe auto opBinary(string op)(typeof(this) other) if (op == "~")
         in(other.last.next is null)
         in(last.next is null)
         in(len + other.len > len)
@@ -97,46 +97,46 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(n[added-elems])
-    auto opOpAssign(string op)(T[] ts) if (op == "~") {
+    @safe auto opOpAssign(string op)(T[] ts) if (op == "~") {
         foreach (t; ts) {
             insertBack(t);
         }
         return this;
     }
-    auto opBinary(string op)(T[] ts) if (op == "~") {
+    @safe auto opBinary(string op)(T[] ts) if (op == "~") {
         foreach (t; ts) {
             insertBack(t);
         }
         return this;
     }
-    auto opBinaryRight(string op)(T[] ts) if (op == "~") {
+    @safe auto opBinaryRight(string op)(T[] ts) if (op == "~") {
         foreach_reverse (t; ts) {
             insertFront(t);
         }
         return this;
     }
 
-    auto opSlice() { return Range(root); }
-    auto range() { return Range(root); }
+    @safe auto opSlice() { return Range(root); }
+    @safe auto range() { return Range(root); }
 
     static if (link == Link.Double) {
-        auto reverseRange() { return ReverseRange(last); }
+        @safe auto reverseRange() { return ReverseRange(last); }
     }
 
     // Θ(1)
-    @property bool empty() { return len == 0; }
+    @property @safe bool empty() { return len == 0; }
 
     // Θ(1)
-    @property size_t length() { return len; }
+    @property @safe size_t length() { return len; }
 
     // Θ(1)
-    @property ref T front() { return root.data; }
+    @property @safe ref T front() { return root.data; }
 
     // Θ(1)
-    @property void front(scope ref T t) { root.data = t; }
+    @property @safe void front(scope ref T t) { root.data = t; }
 
     // Θ(1)
-    ref T moveFront()
+    @safe ref T moveFront()
     {
         auto tmp = root;
         root = root.next;
@@ -149,19 +149,19 @@ struct List(T, Link link = Link.Single) {
 
     // Θ(1)
     @property
-    ref T back() {
+    @safe ref T back() {
         return last.data;
     }
 
     // Θ(1)
     @property
-    void back(T t) {
+    @safe void back(T t) {
         last.data = t;
     }
 
     static if (link == Link.Double) {
         // Θ(1)
-        ref T moveBack()
+        @safe ref T moveBack()
             in(last.prev !is null)
         {
             auto n = last;
@@ -173,24 +173,24 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(1)
-    void clear() {
+    @safe void clear() {
         len = 0;
         Node root = null;
         Node last = null;
     }
 
     // Θ(1)
-    void insert(T t) {
+    @safe void insert(T t) {
         insertFront(t);
     }
 
     // Θ(1)
-    auto removeAny() {
+    @safe auto removeAny() {
         return removeFront();
     }
 
     // Θ(1)
-    void insertFront(T t) {
+    @safe void insertFront(T t) {
         static if (link == Link.Single) {
             root = new Node(t, root);
         } else {
@@ -201,7 +201,7 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(1)
-    void insertBack(T t) {
+    @safe void insertBack(T t) {
         if (this.empty()) {
             root = new Node(t);
             last = root;
@@ -219,7 +219,7 @@ struct List(T, Link link = Link.Single) {
     }
 
     // Θ(1)
-    void removeFront() {
+    @safe void removeFront() {
         root = root.next;
         static if (link == Link.Double) {
             root.prev = null;
@@ -229,7 +229,7 @@ struct List(T, Link link = Link.Single) {
 
     static if (link == Link.Double) {
         // Θ(1)
-        void removeBack() {
+        @safe void removeBack() {
             last.prev.next = null;
             --len;
         }
@@ -264,6 +264,7 @@ struct List(T, Link link = Link.Single) {
     Node last; invariant(last !is null);
 
     struct Range {
+        @safe:
         this(scope ref Node root) { this.root = root; }
 
         @property T front() { return root.data; }
@@ -281,6 +282,7 @@ struct List(T, Link link = Link.Single) {
     }
 
     struct ReverseRange {
+        @safe:
         this(scope ref Node last) { this.last = last; }
 
         @property T front() { return last.data; }
@@ -301,21 +303,22 @@ struct List(T, Link link = Link.Single) {
 private:
 
 final class ListNode(T, Link link = Link.Single) {
+    @safe:
     static if (link.Double) {
         typeof(this) prev = null;
     }
     typeof(this) next = null;
     T data;
 
-    this(scope ref T t) { data = t; }
+    this(ref T t) { data = t; }
 
     static if (link == Link.Single) {
-        this(scope ref T t, typeof(this) next) {
+        this(ref T t, typeof(this) next) {
             data = t;
             this.next = next;
         }
     } else {
-        this(scope ref T t, typeof(this) prev, typeof(this) next) {
+        this(ref T t, typeof(this) prev, typeof(this) next) {
             data = t;
             this.prev = prev;
             this.next = next;
